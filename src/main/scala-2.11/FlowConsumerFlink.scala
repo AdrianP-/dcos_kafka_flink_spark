@@ -58,8 +58,6 @@ object FlowConsumerFlink extends App {
                 }
         }
       .flatMap(x => x)
-      .map(x=>(System.currentTimeMillis(),x))
-
 
 //    flow.writeAsText("/tmp/outputFlink.log")
 
@@ -71,12 +69,7 @@ object FlowConsumerFlink extends App {
     lazy val producer = new KafkaProducer[String,String](props_out)
 
     flow.map( x=>{
-      val obj =Map("eventid_1"-> x._2._1,
-                   "eventid_2"-> x._2._2,
-                  "distance" -> x._2._3,
-                  "timestamp" -> x._1)
-      val str_obj = scala.util.parsing.json.JSONObject(obj).toString()
-
+      val str_obj: String = utils.generateJson(x)
       producer.send(new ProducerRecord[String, String](topic_out, str_obj))
     })
 

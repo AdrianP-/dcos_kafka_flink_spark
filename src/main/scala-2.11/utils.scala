@@ -28,4 +28,12 @@ object utils{
     distances.sortBy(_._3)
   }
 
+  def generateJson(x: (String, String, Double)): String = {
+    val obj = Map("eventid_1" -> x._1,
+      "eventid_2" -> x._2,
+      "distance" -> x._3,
+      "timestamp" -> System.currentTimeMillis())
+    val str_obj = scala.util.parsing.json.JSONObject(obj).toString()
+    str_obj
+  }
 }

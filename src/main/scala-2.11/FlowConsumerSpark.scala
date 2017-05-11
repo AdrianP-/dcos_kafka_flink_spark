@@ -65,15 +65,12 @@ object FlowConsumerSpark extends App {
 
     lazy val producer: KafkaProducer[String, String] = new KafkaProducer[String, String](props_out)
 
-    flow.foreachRDD( rdd => {
+
+    flow.foreachRDD(rdd => {
       rdd.foreach{ case (key, input ) => {
         val distances = utils.calculateDistances(input)
         distances.map(x => {
-          val obj = Map("eventid_1" -> x._1,
-            "eventid_2" -> x._2,
-            "distance" -> x._3,
-            "timestamp" -> System.currentTimeMillis())
-          val str_obj = scala.util.parsing.json.JSONObject(obj).toString()
+          val str_obj: String = utils.generateJson(x)
           producer.send(new ProducerRecord[String, String](topic_out, str_obj))
         })
       }}
