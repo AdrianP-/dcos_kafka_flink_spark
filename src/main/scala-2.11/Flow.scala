@@ -17,15 +17,9 @@ import org.json4s.DefaultFormats
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
-class Flow(trace: String) extends Serializable{
+class Flow(flow_case : Flow_ip4) extends Serializable {
 
-
-  implicit val formats = DefaultFormats
-
-  var flow_case : Flow_ip4 = parse(trace).extract[Flow_ip4]
-
-  def getAllValuesFromString() = this.flow_case.productIterator.drop(1).map(_.asInstanceOf[String].toDouble).toList //Elimino el primer campo eventId
-  //def getAllValuesFromString() = this.flow_case.productIterator.map(_.asInstanceOf[String].toDouble).toList
+  val create = System.currentTimeMillis()
 
   def getKey() = this.flow_case.eventid
 
@@ -33,8 +27,9 @@ class Flow(trace: String) extends Serializable{
 
   def getFlow() : Flow_ip4 = flow_case
 
-}
+  def getCreate() : Long = create
 
+}
 
 //case class Flow_ip6(eventid: String,
 //                    dst_ip6: String,

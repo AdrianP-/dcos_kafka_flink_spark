@@ -18,6 +18,8 @@ import org.apache.flink.streaming.util.serialization.SimpleStringSchema
 import org.apache.flink.util.Collector
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
 import org.apache.kafka.common.serialization.StringSerializer
+import org.json4s.DefaultFormats
+import org.json4s.native.JsonMethods._
 
 import math._
 
@@ -26,11 +28,14 @@ import math._
 object FlowConsumerFlink extends App {
 
   override def main(args: Array[String]) {
+    val cores = 8
 
-    val senv = StreamExecutionEnvironment.createLocalEnvironment(2)
+    val senv = StreamExecutionEnvironment.createLocalEnvironment(cores)
+    //val senv = StreamExecutionEnvironment.createRemoteEnvironment("localhost",6123,"/home/aportabales/dcos_kafka_flink_spark/target/scala-2.11/dcos_kafka_flink_spark-assembly-1.0.jar")
+    senv.setParallelism(cores)
 
     val topic_in = "benchmark_flow"
-    val topic_out = "output"
+    val topic_out = "benchmark_flow_flink_10k_"+cores+"cores"
     val kafkaServer = "10.10.40.1:9092"
 
     val props_in = new Properties()
@@ -40,26 +45,27 @@ object FlowConsumerFlink extends App {
 
     val stream = senv.addSource(new FlinkKafkaConsumer010[String](topic_in, new SimpleStringSchema(), props_in))
 
-
     val flow = stream
       .filter(!_.contains("src_ip6"))
       .map(trace =>{
-      new Flow(trace).getFlow()
-    })
-      .keyBy(_.src_ip4)
-      .timeWindow(Time.seconds(3))
+
+        implicit val formats = DefaultFormats
+        val flow_case : Flow_ip4 = parse(trace).extract[Flow_ip4] //Instead of put this piece of code inside Flow class, Spark has a problem with the serializations and implicit. Flink works fine.
+
+        new Flow(flow_case)
+      })
+      .keyBy(_.getIp())
+      .timeWindow(Time.seconds(10))
       .apply{(
               key: String,
               window: TimeWindow,
-              input: Iterable[Flow_ip4],
-              out: Collector[List[(String,String, Double)]]) => {
-                  val distances: List[(String, String, Double)] = utils.calculateDistances(input)
+              input: Iterable[Flow],
+              out: Collector[List[(String, Long, String, Long, Double)]]) => {
+                  val distances = utils.calculateDistances(input)
                   out.collect(distances)
                 }
         }
       .flatMap(x => x)
-
-//    flow.writeAsText("/tmp/outputFlink.log")
 
     val props_out = new Properties()
     props_out.put("bootstrap.servers", kafkaServer)
@@ -71,6 +77,7 @@ object FlowConsumerFlink extends App {
     flow.map( x=>{
       val str_obj: String = utils.generateJson(x)
       producer.send(new ProducerRecord[String, String](topic_out, str_obj))
+      str_obj
     })
 
     senv.execute("Kafka Window Stream Flow distances")

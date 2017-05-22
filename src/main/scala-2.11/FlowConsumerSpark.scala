@@ -16,18 +16,19 @@ import org.json4s.DefaultFormats
 import dcos_kafka_flink_spark.Flow
 import dcos_kafka_flink_spark.Flow_ip4
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerRecord}
+import org.json4s.native.JsonMethods._
 
 object FlowConsumerSpark extends App {
 
 
   override def main(args: Array[String]) {
-
-    val conf = new SparkConf().setMaster("local[2]").setAppName("Kafka Window Stream Flow distances")
+    val cores = 8
+    val conf = new SparkConf().setMaster("local["+cores+"]").setAppName("Kafka Window Stream Flow distances")
     val sc =  new SparkContext(conf)
     val ssc = new StreamingContext(sc, Seconds(3))
 
     val topic_in = "benchmark_flow"
-    val topic_out = "output"
+    val topic_out = "benchmark_flow_spark_10k_"+cores+"cores"
     val kafkaServer = "10.10.40.1:9092"
 
     val kafkaParams = Map[String, Object](
@@ -36,7 +37,7 @@ object FlowConsumerSpark extends App {
       "value.deserializer" -> classOf[StringDeserializer],
       "group.id" -> "test_flowConsumerSpark"
 //      "auto.offset.reset" -> "latest",
-//      "enable.auto.commit" -> (false: java.lang.Boolean)
+//      "enable.auto.commit" -> (true: java.lang.Boolean)
     )
 
     val topics = Array(topic_in)
@@ -50,12 +51,16 @@ object FlowConsumerSpark extends App {
     val flow = stream.map(_.value())
       .filter(!_.contains("src_ip6"))
       .map(record => {
+
         implicit val formats = DefaultFormats
-        val flow  = new Flow(record).getFlow()
-        (flow.src_ip4,flow)
+        val flow_case : Flow_ip4 = parse(record).extract[Flow_ip4] //Instead of put this piece of code inside Flow class, Spark has a problem with the serializations and implicit. Flink works fine.
+
+        val flow = new Flow(flow_case)
+        (flow.getIp(), flow)
       })
       .groupByKey()
 
+    flow.print()
 
     val props_out = new Properties()
 

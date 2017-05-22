@@ -15,24 +15,26 @@ object utils{
     sqrt((xs zip ys).map { case (x,y) => pow(y - x, 2) }.sum)
   }
 
-  def getCombinations(lists : Iterable[Flow_ip4]) = {
+  def getCombinations(lists : Iterable[Flow]) = {
     lists.toList.combinations(2).map(x=> (x(0),x(1))).toList
   }
 
-  def getAllValuesFromString(flow_case : Flow_ip4) = flow_case.productIterator.drop(1).map(_.asInstanceOf[String].toDouble).toList
+  def getValuesForDistance(flow : Flow) = flow.getFlow().productIterator.drop(1).map(_.asInstanceOf[String].toDouble).toList
 
-  def calculateDistances(input: Iterable[Flow_ip4]): List[(String, String, Double)] = {
-    val combinations: List[(Flow_ip4, Flow_ip4)] = getCombinations(input)
+  def calculateDistances(input: Iterable[Flow]) = {
+    val combinations: List[(Flow, Flow)] = getCombinations(input)
     val distances = combinations.map{
-      case(f1,f2) => (f1.eventid,f2.eventid,euclideanDistance(getAllValuesFromString(f1),getAllValuesFromString(f2)))}
+      case(f1,f2) => (f1.getKey(),f1.getCreate(),f2.getKey(),f2.getCreate(),euclideanDistance(getValuesForDistance(f1),getValuesForDistance(f2)))}
     distances.sortBy(_._3)
   }
 
-  def generateJson(x: (String, String, Double)): String = {
+  def generateJson(x: (String, Long, String, Long, Double )): String = {
     val obj = Map("eventid_1" -> x._1,
-      "eventid_2" -> x._2,
-      "distance" -> x._3,
-      "timestamp" -> System.currentTimeMillis())
+      "ts_flow1" -> x._2,
+      "eventid_2" -> x._3,
+      "ts_flow2" -> x._4,
+      "distance" -> x._5,
+      "ts_output" -> System.currentTimeMillis())
     val str_obj = scala.util.parsing.json.JSONObject(obj).toString()
     str_obj
   }
