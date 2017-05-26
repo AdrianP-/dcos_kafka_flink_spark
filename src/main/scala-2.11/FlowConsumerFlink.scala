@@ -55,7 +55,7 @@ object FlowConsumerFlink extends App {
         new Flow(flow_case)
       })
       .keyBy(_.getIp())
-      .timeWindow(Time.seconds(10))
+      .timeWindow(Time.seconds(3))
       .apply{(
               key: String,
               window: TimeWindow,

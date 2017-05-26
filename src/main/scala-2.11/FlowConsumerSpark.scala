@@ -24,6 +24,7 @@ object FlowConsumerSpark extends App {
   override def main(args: Array[String]) {
     val cores = 8
     val conf = new SparkConf().setMaster("local["+cores+"]").setAppName("Kafka Window Stream Flow distances")
+//    val conf = new SparkConf().setAppName("Kafka Window Stream Flow distances")
     val sc =  new SparkContext(conf)
     val ssc = new StreamingContext(sc, Seconds(3))
 
@@ -60,7 +61,7 @@ object FlowConsumerSpark extends App {
       })
       .groupByKey()
 
-    flow.print()
+//    flow.print()
 
     val props_out = new Properties()
 
