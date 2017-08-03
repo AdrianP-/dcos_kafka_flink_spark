@@ -61,7 +61,7 @@ object FlowConsumerSpark extends App {
       })
       .groupByKey()
 
-//    flow.print()
+    flow.print()
 
     val props_out = new Properties()
 
